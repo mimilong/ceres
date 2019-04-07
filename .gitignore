@@ -181,6 +181,7 @@ Icon
 
 # exclude data files
 /**/data/*.csv
+/**/log/*.log
 /**/stat/*.csv
 /**/model/*
 /**/obj/*
