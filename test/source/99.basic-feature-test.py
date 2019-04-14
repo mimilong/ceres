@@ -12,14 +12,14 @@ import pandas as pd
 import datetime
 
 ## 1.2 配置外部包和数据路径
-tool_path = '/Users/long.li/Documents/work/project/model_tool'
+tool_path = '/Users/long.li/Documents/work/project/data-analytics-utopia'
 sys.path.append(tool_path)
 
 ## 1.3 加载分析通用工具包(环境路径上一步添加)
-import source as mt
+import utopia as mt
 # import source.MdVarSelect as vs
-import source.statfun as sf
-import source.tool as tf
+from utopia import sf
+import utopia.tool as tf
 
 ## 1.4 加载项目配置相关项
 conf = configparser.ConfigParser()
@@ -81,3 +81,12 @@ dft2 = pd.DataFrame([t['result']['eval'] for t in trials.trials])
 pd.concat([dft1, dft2], axis=1,ignore_index=True)
 
 dict(dict(best, a= 3), **space_eval(fspace, best))
+
+ns = 0
+vars_p_round = 8
+vars_all = list(range(100))
+while ns < len(vars_all):
+    print(vars_all[ns:(ns + vars_p_round)])
+    ns = ns + vars_p_round
+
+"FX01_"[:5][-1]

@@ -11,3 +11,5 @@ from .MdHyperopt import MdHyperopt
 from .utils import  *
 
 from . import  statfun as sf
+
+from . import tool

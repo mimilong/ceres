@@ -4,6 +4,8 @@ import sys
 import os
 import configparser
 import logging
+import json
+import re
 
 import numpy as np
 import pandas as pd
@@ -15,6 +17,8 @@ sys.path.append(tool_path)
 
 ## 1.3 加载分析通用工具包(环境路径上一步添加)
 import utopia as mt
+import utopia.MdVarSelect as vs
+import utopia.MdModelSelection as ms
 import utopia.statfun as sf
 import utopia.tool as tf
 
@@ -50,12 +54,15 @@ flag_test = ~flag_train
 # 3. split train and test
 dataset_train_X = dataset_model[variables][flag_train]
 dataset_train_y = np.array(dataset_model[target][flag_train])
-np.save("data/dataset_train_y.npy", dataset_train_y)
+np.save("dataset_train_y.npy", dataset_train_y)
 dataset_test_X = dataset_model[variables][flag_test]
 dataset_test_y = np.array(dataset_model[target][flag_test])
 ########################################################
 # 4. eda & preprocess
 ###
+
+# {v for k,v in dataset_train_X.dtypes.astype(str).to_dict().items()}
+logger.info(dataset_train_X.shape)
 obj_processor = mt.MdProcess(miss_set = miss_set, cat_proc = "onehot")
 obj_processor.fit(dataset_train_X, dataset_train_y, save = "stat")
 
@@ -64,36 +71,45 @@ _, var_desc = obj_processor.view()
 
 dataset_train_proc = obj_processor.predict(dataset_train_X)
 pd.DataFrame(dataset_train_proc).to_csv("data/dataset_preproc_train.csv", index=False)
+pd.unique(pd.DataFrame(dataset_train_proc).dtypes)
 #
+
 ########################################################
 
 # 5. 变量选择
+import numpy as np
+dataset_train_y = np.load("data/dataset_train_y.npy")
+dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
+dataset_train_proc.shape
+
 selector = {"IV":{"threshold": 0.01}, "Xgb":{"top":5}}
 params = {"groups":2, "ntree":50, "learning_rate":0.1, "splitter":"optimal","max_depth":4}
 
 obj_selector = mt.mv.MdVarSelectApi(target_type = "b", selector = selector, **params)
 obj_selector.fit(X = dataset_train_proc, y = dataset_train_y, save = "stat")
-obj_selector.export(lang = "json")
-# obj_selector.varsele_get_perf()
-# len(obj_selector.view()[0]) #29
+obj_selector.varsele_get_perf()
 
-dataset_train_sele = obj_selector.predict(dataset_train_proc)
-# len(dataset_train_sele.keys()) #29
 
 ########################################################
 # 6. 变量变换
-mapper = {"woe":{}, "power":{}}
-params = {"flag_set" :["FMS", "FFP", "FCP", "FX"], "splitter":"optimal","max_depth":4}
+import numpy as np
+dataset_train_y = np.load("dataset_train_y.npy")
+dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
 
-obj_transformer = mt.vt.MdVarTransApi(target_type = "b", mapper = mapper, **params)
-obj_transformer.fit(X = dataset_train_proc, y = dataset_train_y, save = "stat")
+obj_transformer_woe = mt.vt.MdVarTransWoe(var_desc = var_desc)
+obj_transformer_woe.fit(X = dataset_train_proc, y = dataset_train_y)
 
-obj_transformer.export(lang = "json")
+stat_vartrans_woe, _ = obj_transformer_woe.view()
+obj_transformer_woe.export(lang = "json")
 
-dataset_train_trans = obj_transformer.predict(dataset_train_sele)
-pd.DataFrame(dataset_train_trans).to_csv("data/dataset_trans_train.csv", index=False)
+import codecs
+with codecs.open('{}/{}'.format("model", 'model_vartrans_woe.json')) as f:
+    model_vartrans_woe = json.load(f)
 
-dataset_train_trans.keys()
+import json_tricks
+with codecs.open('{}/{}'.format("model", 'model_vartrans_woe.json')) as f:
+    model_vartrans_woe = json_tricks.load(f)
+
 ########################################################
 # 7. 超参数调优
 from hyperopt import hp
@@ -114,7 +130,7 @@ obj_optimizer.save(save = "stat")
 obj_optimizer.stat_hyperopt
 
 ########################################################
-# 8. 模型训练与评估
+# 7. 模型训练与评估
 # 列转行，新的列名为decile
 import numpy as np
 miss_set = [999]

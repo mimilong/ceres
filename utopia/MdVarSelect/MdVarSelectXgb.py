@@ -17,7 +17,7 @@ class MdVarSelectXgb(MdBase):
         self.info("ModelTool MdVarSelectXgb: Initial Success")
 
     def fit(self, X, y, *args, **kw):
-        vars_all = X.keys()
+        vars_all = list(X.keys())
         np.random.shuffle(vars_all)
         vars_p_round = int(len(vars_all)/self.groups)
         X = pd.DataFrame(self.md_varsele_preproc(X = X, y =y))
@@ -28,6 +28,7 @@ class MdVarSelectXgb(MdBase):
         while ns < len(vars_all):
             predictor.fit(X = X[vars_all[ns:(ns+vars_p_round)]], y = y, save=None)
             stat_varperf.append(predictor.varsele_get_perf())
+            ns = ns+vars_p_round
 
         self.stat_varperf = pd.concat(stat_varperf)
 

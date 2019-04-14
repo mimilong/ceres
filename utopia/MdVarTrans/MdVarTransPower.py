@@ -21,7 +21,7 @@ class MdVarTransPower(MdBase):
     @md_std_log()
     def fit(self, save="all", *args, **kw):
 
-        self.vars_num = [k for k, v in self.var_desc if v["type"] == "numeric"]
+        self.vars_num = {k for k, v in self.var_desc.items() if v["type"] == "numeric"}
         self.update_varinfo()
         self.save(save=save)
 
@@ -45,7 +45,7 @@ class MdVarTransPower(MdBase):
 
         res = {}
         for m in power_set:
-            res = dict(res, **{"{}_{}".format(m, k): self.map[k](X[k]) for k in vars_num})
+            res = dict(res, **{"{}_{}".format(m, k): self.map[m](X[k]) for k in vars_num})
         return dict(res)
 
     @md_std_log()
@@ -77,9 +77,10 @@ class MdVarTransPower(MdBase):
             with codecs.open('{}/{}'.format(path, 'model_vartrans_power.json'), 'w', 'utf-8') as f:
                 json.dump(self.var_desc, f, ensure_ascii=False)
 
+    @md_std_log()
     def load(self, path = "model", lang="json", power_set = ["SQ", "SR", "IV", "LN"]):
         if lang == "json":
             with codecs.open('{}/{}'.format(path, 'model_vartrans_power.json')) as f:
                 self.var_desc = json.load(f)
-            self.vars_num = {v["origin"] for k,v in self.var_desc if v["type"] == "numeric"}
+            self.vars_num = {v["origin"] for k,v in self.var_desc.items() if v["type"] == "numeric"}
 

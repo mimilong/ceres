@@ -178,7 +178,7 @@ class MdProcess(MdBase):
 
         # numeric tag part
         ## FMS_
-        desc_FMS = {"FMS_{}".format(k):{"origin":k, "desc":"Flag of missing for {}".format(k), "type": "binary"} for k,v in self.model_proc_num.items() if v['pct_miss'] > self.pct_indicate}
+        desc_FMS = {"FMS_{}".format(k):{"origin":k, "desc":"Flag of missing for {}".format(k), "type": "binary"} for k,v in self.model_proc_num.items() if v['pct_miss'] > self.pct_indicate and v['pct_miss'] < (1 - self.pct_indicate)}
 
         # FFP_
         desc_FFP = {"FFP_{}".format(k): {"origin": k, "desc": "Flag of floor point for {}".format(k), "type": "binary"} for k, v in
@@ -240,7 +240,7 @@ class MdProcess(MdBase):
 
         # 缺失值填充
         self.logger.debug(subset)
-        X = {k:np.where(np.isnan(X[k]) | np.in1d(X[k], self.miss_set), self.model_proc_num[k][self.miss_impute], X[k]) for k in subset}
+        X = {k:np.where(np.isnan(X[k]) | np.in1d(X[k], self.miss_set), self.model_proc_num[k][self.miss_impute], X[k]) for k in subset if self.model_proc_num[k]["pct_miss"] < (1 - self.pct_indicate)}
 
         return dict(X, **X_FMS)
 
@@ -250,6 +250,7 @@ class MdProcess(MdBase):
             只做一件事
                 对数据做floor cap的处理
         '''
+        subset = set(subset) & set(X.keys())
         for var in subset:
             X[var] = np.clip(X[var], self.model_proc_num[var]['q%02d' % (self.q_trim*100)], self.model_proc_num[var]['q%02d' % ((1-self.q_trim)*100)])
 

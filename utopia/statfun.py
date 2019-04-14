@@ -70,6 +70,8 @@ def obj_info(obj):
         return obj.shape
     if type(obj) is dict:
         return list(obj.keys())
+    if type (obj) is set:
+        return [obj_info(i) for i in obj]
     return obj
 
 

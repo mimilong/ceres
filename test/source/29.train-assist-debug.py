@@ -66,62 +66,39 @@ dataset_train_proc = obj_processor.predict(dataset_train_X)
 pd.DataFrame(dataset_train_proc).to_csv("data/dataset_preproc_train.csv", index=False)
 #
 ########################################################
-
 # 5. 变量选择
+dataset_train_y = np.load("dataset_train_y.npy")
+dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
+
 selector = {"IV":{"threshold": 0.01}, "Xgb":{"top":5}}
 params = {"groups":2, "ntree":50, "learning_rate":0.1, "splitter":"optimal","max_depth":4}
 
 obj_selector = mt.mv.MdVarSelectApi(target_type = "b", selector = selector, **params)
 obj_selector.fit(X = dataset_train_proc, y = dataset_train_y, save = "stat")
-obj_selector.export(lang = "json")
-# obj_selector.varsele_get_perf()
-# len(obj_selector.view()[0]) #29
+result = obj_selector.predict(X = dataset_train_proc)
 
-dataset_train_sele = obj_selector.predict(dataset_train_proc)
-# len(dataset_train_sele.keys()) #29
+obj_selector.export(lang = "json")
+obj_selector.varsele_get_perf()
 
 ########################################################
 # 6. 变量变换
+dataset_train_y = np.load("data/dataset_train_y.npy")
+dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
+
 mapper = {"woe":{}, "power":{}}
 params = {"flag_set" :["FMS", "FFP", "FCP", "FX"], "splitter":"optimal","max_depth":4}
 
 obj_transformer = mt.vt.MdVarTransApi(target_type = "b", mapper = mapper, **params)
 obj_transformer.fit(X = dataset_train_proc, y = dataset_train_y, save = "stat")
 
+_, var_desc = obj_transformer.view()
 obj_transformer.export(lang = "json")
 
-dataset_train_trans = obj_transformer.predict(dataset_train_sele)
-pd.DataFrame(dataset_train_trans).to_csv("data/dataset_trans_train.csv", index=False)
 
-dataset_train_trans.keys()
-########################################################
-# 7. 超参数调优
-from hyperopt import hp
-import numpy as np
+obj_transformer.load(lang="json")
+model_vartrans_woe = obj_transformer.transformer[0].model_vartrans_woe
+result = obj_transformer.predict(X = dataset_train_proc)
 
-dataset_train_y = np.load("dataset_train_y.npy")
-dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
-
-fspace = {"learning_rate":hp.loguniform("learning_rate", np.log(10**-5), 0),
-          "max_depth":hp.choice("max_depth", [2,3,4])}
-
-kw = {"objective":"binary:logistic", "metric":"auc", "cv":5, "ntree":200, "early_stopping_rounds":5}
-
-obj_optimizer = mt.MdHyperopt(model = "xgb", space = fspace,  minimize = False, target_type = "b", **kw)
-obj_optimizer.fit(X = dataset_train_proc, y = dataset_train_y, max_evals=5)
-
-obj_optimizer.save(save = "stat")
-obj_optimizer.stat_hyperopt
+result.keys()
 
 ########################################################
-# 8. 模型训练与评估
-# 列转行，新的列名为decile
-import numpy as np
-miss_set = [999]
-dataset_train_y = np.load("dataset_train_y.npy")
-dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
-obj_predictor = mt.ms.MdModelSelectionXgb()
-obj_predictor.fit(dataset_train_proc, dataset_train_y)
-
-obj_predictor.save(save = "model")
-

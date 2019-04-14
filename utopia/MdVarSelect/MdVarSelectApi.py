@@ -23,11 +23,11 @@ for p in os.listdir(os.path.abspath(dirname(__file__))):
 # mapping = {"IV":"MdVarSelect", "Xgb":"MdVarSelectXgb"}
 # 变量选择
 class MdVarSelectApi(MdBase):
-    def __init__(self, wkdir=".", target_type='b', method = {"IV":{"threshold": 0.01}}, logger=logging.getLogger('root'), indents = 1, log_stack = [], *args, **kw):
+    def __init__(self, wkdir=".", target_type='b', selector = {"IV":{"threshold": 0.01}}, logger=logging.getLogger('root'), indents = 1, log_stack = [], *args, **kw):
         MdBase.__init__(self, logger, indents, log_stack)
         self.wkdir = wkdir
         self.target_type = target_type
-        self.method = method
+        self.method = selector
         self.kw = kw
         self.info("ModelTool MdVarSelect: Initial Success")
 
@@ -39,12 +39,15 @@ class MdVarSelectApi(MdBase):
 
         stat_varperf = pd.DataFrame({"variable": list(X.keys())})
 
+        # print(stat_varperf)
+
         for k, v in self.method.items():
             params = dict(v, target_type = self.target_type, log_stack = self.log_stack, indents = self.indents)
             params = dict(params, **self.kw)
             m = mapping[k](**params)
             m.fit(X = X,y = y)
-            stat_varperf = pd.merge(stat_varperf, m.varsele_get_perf(), how = "left")
+            # print(m.varsele_get_perf())
+            stat_varperf = pd.merge(stat_varperf, m.varsele_get_perf(), how = "left", on = "variable")
 
         self.stat_varperf = stat_varperf
         self.model_varsele_vars = self.varsele_vote()
@@ -59,6 +62,7 @@ class MdVarSelectApi(MdBase):
 
         score = 0
         for k, v in kw.items():
+            k = k.lower()
             if v.get("threshold") is not None:
                 score = score + (np.array(self.stat_varperf[k]) > v.get("threshold"))
             else:
@@ -72,6 +76,9 @@ class MdVarSelectApi(MdBase):
         vars = subset if subset is not None else self.model_varsele_vars
         return {k: X[k] for k in vars}
 
+    @md_std_log()
+    def varsele_get_perf(self):
+        return self.stat_varperf
 
     def view(self):
         return self.model_varsele_vars, None
@@ -97,6 +104,7 @@ class MdVarSelectApi(MdBase):
             with codecs.open('{}/{}'.format(path, 'model_varsele_vars.json'), 'w', 'utf-8') as f:
                 json.dump(self.model_varsele_vars, f, ensure_ascii=False)
 
-    def load(self, path):
+    def load(self, path = None):
+        path = "model" if path is None else path
         with codecs.open('{}/{}'.format(path, 'model_varsele_vars.json')) as f:
             self.model_varsele_vars = json.load(f)
