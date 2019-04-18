@@ -22,6 +22,8 @@ result.iloc[-1, 0]
 result.iloc[-1].to_dict()
 
 
+idx_name = [i for i in result.columns if i.startswith("test") and i.endswith("mean")][0]
+
 from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
 X, y = load_iris(return_X_y=True)

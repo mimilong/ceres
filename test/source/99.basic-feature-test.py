@@ -89,4 +89,26 @@ while ns < len(vars_all):
     print(vars_all[ns:(ns + vars_p_round)])
     ns = ns + vars_p_round
 
-"FX01_"[:5][-1]
+import json
+import codecs
+
+with codecs.open('{}/{}'.format("model", 'test.json'),'w', 'utf-8') as f:
+    json.dump(None, f)
+with codecs.open('{}/{}'.format("model", 'test.json')) as f:
+    ttt = json.load(f)
+str(ttt)
+
+
+
+a = [1]
+a.pop()
+a == []
+
+import pandas as pd
+df = pd.DataFrame({"a":[1,2,3], "b":[4,5,6]})
+df.__len__()
+
+a = set()
+type(a) is list or type(a) is  set
+
+

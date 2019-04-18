@@ -147,8 +147,12 @@ class MdProcess(MdBase):
 
     @md_std_log()
     def eda_cat(self, X, y):
-        cat_dict = {k: np.array(X[k]) for k in X.columns}
-        self.stat_eda_cat = pd.concat([self.eda_cat_base(x=v, y=y).assign(variable = k) for k, v in cat_dict.items()])
+        if self.vars_cat == []:
+            self.stat_eda_cat = None
+        else:
+
+            cat_dict = {k: np.array(X[k]) for k in X.columns}
+            self.stat_eda_cat = pd.concat([self.eda_cat_base(x=v, y=y).assign(variable = k) for k, v in cat_dict.items()])
 
     @md_std_log()
     def preproc_cat_dummy(self, prefix = "FX"):
@@ -156,7 +160,7 @@ class MdProcess(MdBase):
         哑变量标记处理函数
         :return:
         """
-        if self.cat_proc is None:
+        if self.cat_proc is None or self.stat_eda_cat is None:
             self.model_proc_cat = None
 
         elif self.cat_proc == "onehot" and self.stat_eda_cat is not None:
@@ -344,5 +348,5 @@ class MdProcess(MdBase):
         with codecs.open('{}/{}'.format(path, 'model_proc_desc.json')) as f:
             self.var_desc = json.load(f)
 
-        self.vars_num = list(self.model_proc_num.keys())
-        self.vars_cat = list(self.model_proc_cat.keys())
+        self.vars_num = [] if self.model_proc_num is None else list(self.model_proc_num.keys())
+        self.vars_cat = [] if self.model_proc_cat is None else list(self.model_proc_cat.keys())

@@ -115,19 +115,20 @@ with codecs.open('{}/{}'.format("model", 'model_vartrans_woe.json')) as f:
 from hyperopt import hp
 import numpy as np
 
-dataset_train_y = np.load("dataset_train_y.npy")
+dataset_train_y = np.load("data/dataset_train_y.npy")
 dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
 
 fspace = {"learning_rate":hp.loguniform("learning_rate", np.log(10**-5), 0),
-          "max_depth":hp.choice("max_depth", [2,3,4])}
+          "min_child_weight":hp.choice('min_child_weight',[30, 50, 100, 150])}
 
-kw = {"objective":"binary:logistic", "metric":"auc", "cv":5, "ntree":200, "early_stopping_rounds":5}
+kw = {"objective":"binary:logistic", "metric":"auc", "cv":5, "ntree":200, "early_stopping_rounds":5,"max_depth":3}
 
 obj_optimizer = mt.MdHyperopt(model = "xgb", space = fspace,  minimize = False, target_type = "b", **kw)
 obj_optimizer.fit(X = dataset_train_proc, y = dataset_train_y, max_evals=5)
 
 obj_optimizer.save(save = "stat")
 obj_optimizer.stat_hyperopt
+obj_optimizer.best
 
 ########################################################
 # 7. 模型训练与评估

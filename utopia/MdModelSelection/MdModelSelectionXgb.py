@@ -29,11 +29,18 @@ class MdModelSelectionXgb(MdBase):
         bp, tp, cp = self.model_set_param()
 
         # evals = [(xgb.DMatrix(d[0], label = d[1], nthread = bp.get("n_jobs")), d[2]) for d in evals]
+        if type(X) is dict:
+            X = pd.DataFrame(X)
         train = xgb.DMatrix(X, label = y, nthread = bp.get("n_jobs"))
 
         if cp.get("nfold"):
             model = xgb.cv(bp, train, **cp)
-            return model.iloc[-1, 0],  model.iloc[-1].to_dict()# evaluate result/ add train round to result
+
+            bst_eval = model.iloc[-1].to_dict()
+            bst_eval["ntree"] = model.__len__()
+            idx_key = [i for i in model.columns if i.startswith("test") and i.endswith("mean")][0]
+
+            return bst_eval[idx_key],  bst_eval# evaluate result/ add train round to result
 
         self.model = xgb.train(bp, train, **tp)
         self.stat_varperf = pd.DataFrame([{'variable':k, 'xgb':v} for k,v in self.model.get_fscore().items()])

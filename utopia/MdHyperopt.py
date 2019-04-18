@@ -23,13 +23,10 @@ class MdHyperopt(MdBase):
 
     @md_std_log()
     def fit(self, X, y, max_evals=20, save = None, *args):
-        objective = self.hyperopt_objfunc_factory(X = X, y=y, **self.kw)
+        objective = self.hyperopt_objfunc_factory(X = pd.DataFrame(X), y=y, **self.kw)
         trials = Trials()
         best = fmin(objective, self.space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
-        self.best = best
-
-        # trial = [{k:v[0] for k, v in t['misc']['vals'].items()} for t in trials.trials]
-        # evals = [t['result']['eval'] for t in trials.trials]
+        self.best = space_eval(self.space, best)
 
         stat_hyperopt = [{k:v[0] for k, v in t['misc']['vals'].items()} for t in trials.trials]
         stat_hyperopt = pd.DataFrame([dict(t, **space_eval(self.space, t)) for t in stat_hyperopt])
@@ -38,7 +35,7 @@ class MdHyperopt(MdBase):
         if save:
             self.save(save=save)
 
-        return space_eval(self.space, best)
+        return self.best
 
     @md_std_log()
     def save(self, save, *args, **kw):
