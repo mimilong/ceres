@@ -53,6 +53,7 @@ def md_std_log(parallel=False):
                 self.logger.info("{}[{}] - {}".format(self.indents * "\t", "-".join(self.log_stack),
                                               "start"))
                 params = {k: pf.obj_info(v) for k, v in kw.items()}
+                # print(params)
                 params = [[pf.obj_info(l) for l in args], params]
 
                 self.logger.info("{}[{}] - {}".format(self.indents * "\t", "-".join(self.log_stack),

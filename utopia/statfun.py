@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.tree import _tree
 from sklearn import tree
+from sklearn.metrics import SCORERS
+import xgboost as xgb
 
 def quantile(arr, bin=10, miss_set=[np.nan], *args, **kw):
     """返回特定数组的分位数，在给定分位点和缺失值集合的情况下.
@@ -70,8 +72,10 @@ def obj_info(obj):
         return obj.shape
     if type(obj) is dict:
         return list(obj.keys())
-    if type (obj) is set or type (obj) is list:
+    if type (obj) in [set ,list, tuple]:
         return [obj_info(i) for i in obj]
+    if isinstance(obj,xgb.DMatrix):
+        return "DMatrix"
     return obj
 
 
@@ -83,9 +87,29 @@ def is_numeric(obj):
     """
     return obj.dtype.kind not in "OSU"
 
-def modeval_stat_index(pred, y, target_type = "b"):
-    return modeval_stat_index_bin(pred, y)
+def modeval_stat_index(pred, y, target_type = "b", metric = None):
+    """
+    # https://scikit-learn.org/stable/modules/model_evaluation.html
+    :param pred:
+    :param y:
+    :param target_type:
+    :param metric:
+    :return:
+    """
+    if metric is None:
+        if target_type == "b":
+            return modeval_stat_index_bin(pred, y)
+        else:
+            return modeval_stat_index_cont(pred, y)
+    if metric in ["auc","ks"]:
+        return modeval_stat_index_bin(pred, y)[metric]
 
+    return SCORERS[metric]._score_func(y, pred)
+
+
+
+def modeval_stat_index_cont(pred, y):
+    pass
 
 def modeval_stat_index_bin(pred, y):
     '''
@@ -102,4 +126,6 @@ def modeval_stat_index_bin(pred, y):
     integ_slice_Y = 1 - (cdf_pos[1:] + cdf_pos[:-1]) / 2
     AUC = sum(integ_slice_X * integ_slice_Y)
     GINI = 2 * AUC - 1
-    return KS, AUC, GINI
+    return {"ks":KS, "auc":AUC, "gini":GINI}
+
+

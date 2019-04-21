@@ -118,7 +118,7 @@ import numpy as np
 dataset_train_y = np.load("data/dataset_train_y.npy")
 dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
 
-fspace = {"learning_rate":hp.loguniform("learning_rate", np.log(10**-5), 0),
+fspace = {"learning_rate":hp.loguniform("learning_rate", np.log(10**-3), 0),
           "min_child_weight":hp.choice('min_child_weight',[30, 50, 100, 150])}
 
 kw = {"objective":"binary:logistic", "metric":"auc", "cv":5, "ntree":200, "early_stopping_rounds":5,"max_depth":3}

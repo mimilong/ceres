@@ -102,3 +102,40 @@ result = obj_transformer.predict(X = dataset_train_proc)
 result.keys()
 
 ########################################################
+# 7.模型选择-LR
+dataset_train_y = np.load("data/dataset_train_y.npy")
+dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
+
+params = {"intercept" :True, "lambda":10, "metric":"auc", "n_jobs":3, "cv":5, "solver":"saga"}
+evals = [(dataset_train_proc, dataset_train_y, "test")]
+
+obj_predictor = mt.ms.MdModelSelectionLR(target_type = "b", **params)
+obj_predictor.fit(X = dataset_train_proc, y = dataset_train_y, save = "stat", evals = evals)
+
+obj_predictor.varsele_get_perf()
+obj_predictor.export(lang = "json")
+
+obj_predictor.load(lang="json")
+result = obj_predictor.predict(X = dataset_train_proc)
+
+# 7.模型选择-xgb
+dataset_train_y = np.load("data/dataset_train_y.npy")
+dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
+
+params = {"objective":"binary:logistic", "metric":"auc", "ntree":200, "early_stopping_rounds":5,"max_depth":3, "learning_rate":0.01}
+evals = [(dataset_train_proc, dataset_train_y, "test")]
+
+obj_predictor = mt.ms.MdModelSelectionXgb(target_type = "b", **params)
+obj_predictor.fit(X = dataset_train_proc, y = dataset_train_y, save = "stat", evals = evals)
+
+obj_predictor.varsele_get_perf()
+
+import xgboost as xgb
+X = dataset_train_proc
+y = dataset_train_y
+train = xgb.DMatrix(X, label = y, nthread = 2)
+bp = {'objective': 'binary:logistic', 'eval_metric': 'auc', 'max_depth': 3, 'learning_rate': 0.01}
+tp = {'num_boost_round': 200}
+model = xgb.train(bp, train, **tp)
+np.mean(model.predict(xgb.DMatrix(X)))
+

@@ -5,6 +5,7 @@ import _pickle as cPickle
 import pandas as pd
 from hyperopt import fmin, tpe, Trials, STATUS_OK, space_eval
 from .MdModelSelection.MdModelApi import mapping
+import codecs
 
 
 # print(ms.__dict__)
@@ -52,10 +53,19 @@ class MdHyperopt(MdBase):
     def hyperopt_objfunc_factory(self, X, y, evals=[], **kw):
         m = self.method
         to_min = self.to_min
+        with codecs.open('{}/{}'.format("log", 'stat_hyperopt.log'), 'w', 'utf-8') as f:
+            pass
+
         def objective(search):
             params = dict(kw, **search)
             model = mapping.get(m)(**params)
             metric, metric_eval = model.fit(X = X, y = y, evals = evals)
+
+            params = {k:v for k,v in params.items() if type(v) in [int, float, bool, complex, str]}
+            with codecs.open('{}/{}'.format("log", 'stat_hyperopt.log'), 'a+', 'utf-8') as f:
+                json.dump(dict(params, **metric_eval), f, ensure_ascii=False)
+                f.write("\n")
+
             return {'loss': metric * to_min, 'eval': metric_eval, 'status': STATUS_OK}
         return objective
 

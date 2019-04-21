@@ -1,4 +1,5 @@
 import codecs
+import itertools
 
 from scipy.special import expit
 import _pickle as cPickle
@@ -20,12 +21,13 @@ class MdModelSelectionXgb(MdBase):
         self.target_type = target_type
         self.seed = seed
         self.kw = kw
+        self.metric = kw.get("metric", None)
 
         self.info("ModelTool MdModelSelectionXgb: Initial Success")
 
 
     @md_std_log()
-    def fit(self, X, y, evals = [], save = "model"):
+    def fit(self, X, y, evals = [], save = "model", *args, **kw):
         bp, tp, cp = self.model_set_param()
 
         # evals = [(xgb.DMatrix(d[0], label = d[1], nthread = bp.get("n_jobs")), d[2]) for d in evals]
@@ -42,13 +44,22 @@ class MdModelSelectionXgb(MdBase):
 
             return bst_eval[idx_key],  bst_eval# evaluate result/ add train round to result
 
+        self.info(bp)
+        self.info(tp)
+        tp.pop("early_stopping_rounds", None)
         self.model = xgb.train(bp, train, **tp)
         self.stat_varperf = pd.DataFrame([{'variable':k, 'xgb':v} for k,v in self.model.get_fscore().items()])
 
         if save:
             self.save(save = save)
 
-        return sf.modeval_stat_index(self.model.predict(xgb.DMatrix(X)), y=y, target_type=self.target_type), { d[2]: sf.modeval_stat_index(self.model.predict(xgb.DMatrix(d[0]), y=d[1]), target_type=self.target_type)  for d in evals}
+        metric = sf.modeval_stat_index(pred=self.model.predict(xgb.DMatrix(X)), y= y, target_type=self.target_type, metric = self.metric)
+        eval_metric = {d[2]: sf.modeval_stat_index(pred=self.predict(X=xgb.DMatrix(d[0])), y=d[1], target_type=self.target_type) for d in evals}
+        eval_metric = [{"{}-{}".format(dn, idx): val for idx, val in idxs.items()} for dn, idxs in eval_metric.items()]
+        eval_metric = dict(itertools.chain(*map(dict.items, eval_metric)))
+        eval_metric["{}-{}".format("train", self.metric)] = metric
+
+        return metric, eval_metric
 
     @md_std_log()
     def predict(self, X, ntree_limit=0, pred_leaf=False):

@@ -89,16 +89,6 @@ while ns < len(vars_all):
     print(vars_all[ns:(ns + vars_p_round)])
     ns = ns + vars_p_round
 
-import json
-import codecs
-
-with codecs.open('{}/{}'.format("model", 'test.json'),'w', 'utf-8') as f:
-    json.dump(None, f)
-with codecs.open('{}/{}'.format("model", 'test.json')) as f:
-    ttt = json.load(f)
-str(ttt)
-
-
 
 a = [1]
 a.pop()
@@ -111,4 +101,68 @@ df.__len__()
 a = set()
 type(a) is list or type(a) is  set
 
+# test append operate
+import codecs
+import json
+with codecs.open('{}/{}'.format("log", 'stat_hyperopt.log'), 'w', 'utf-8') as f:
+    pass
 
+# https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/metrics/scorer.py
+
+# feature test
+import numpy as np
+dataset_train_y = np.load("data/dataset_train_y.npy")
+dataset_train_proc = pd.read_csv("data/dataset_preproc_train.csv")
+dataset_train_proc.shape, dataset_train_y.shape
+
+import sklearn.linear_model as glm
+params = {"fit_intercept" :True, "Cs":[0.1], "n_jobs":3, "cv":5, "solver":"saga", "penalty":"l1", "max_iter":100}
+predictor_t = glm.LogisticRegressionCV(**params)
+predictor_t.fit(dataset_train_proc, dataset_train_y)
+
+result2 = predictor_t.predict_proba(dataset_train_proc)
+
+np.mean(result2[:,1])
+
+# 222
+from scipy.special import expit
+import codecs
+import json
+len(predictor_t.coef_[0])
+predictor_t.intercept_
+coef = predictor_t.coef_
+np.append(coef, predictor_t.intercept_)
+
+result = np.matmul(np.array(dataset_train_proc), predictor_t.coef_.T) + predictor_t.intercept_
+np.mean(expit(result))
+
+with codecs.open("model/model_lr_t.json", 'w', 'utf-8') as f:
+    json.dump(list(coef[0]), f, ensure_ascii=False)
+
+with codecs.open("model/model_lr_t.json") as f:
+    coef = json.load(f)
+
+coef = np.array(coef).reshape(-1,1)
+result = np.matmul(np.array(dataset_train_proc), coef) + predictor_t.intercept_
+np.mean(expit(result))
+
+result = np.array(0)
+coef = dict(zip(dataset_train_proc.columns, predictor_t.coef_[0]))
+for k in dataset_train_proc.columns:
+    result = result + dataset_train_proc[k] * coef[k]
+
+np.mean(expit(result + predictor_t.intercept_))
+
+
+
+X = dataset_train_proc
+X = {k: np.array(X[k]) for k in set(obj_predictor.model_coef.keys()) & set(X.columns)}
+X["intercept"] = 1  # 改变了原数据集
+result = np.array(0)
+for k, v in obj_predictor.model_coef.items():
+    result = X[k] * v
+
+X[k] * v
+
+if self.target_type == "b":
+    result = expit(result)
