@@ -67,8 +67,9 @@ class MdVarSelectApi(MdBase):
                 tmp = (np.array(self.stat_varperf[k]) > v.get("threshold"))
                 score = score + np.where(np.isnan(tmp), 0, tmp)
             else:
-                tmp = (np.array(self.stat_varperf[k]).argsort() > (len(self.stat_varperf["variable"]) - v.get("top")))
-                score = score + np.where(np.isnan(tmp), 0, tmp)
+                arr = np.array(-self.stat_varperf[k])
+                tmp = (arr.argsort().argsort() < v.get("top"))
+                score = score + np.where(np.isnan(arr), 0, tmp)
 
         return list(self.stat_varperf["variable"][score >= vote])
 
